@@ -1,6 +1,37 @@
-import {max, min, sum} from "d3-array";
-import {justify} from "./align.js";
-import constant from "./constant.js";
+// https://github.com/d3/d3-sankey v0.12.3 Copyright 2021 Mike Bostock
+(function (global, factory) {
+typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-array'), require('d3-shape')) :
+typeof define === 'function' && define.amd ? define(['exports', 'd3-array', 'd3-shape'], factory) :
+(global = global || self, factory(global.d3 = global.d3 || {}, global.d3, global.d3));
+}(this, (function (exports, d3Array, d3Shape) { 'use strict';
+
+function targetDepth(d) {
+  return d.target.depth;
+}
+
+function left(node) {
+  return node.depth;
+}
+
+function right(node, n) {
+  return n - 1 - node.height;
+}
+
+function justify(node, n) {
+  return node.sourceLinks.length ? node.depth : n - 1;
+}
+
+function center(node) {
+  return node.targetLinks.length ? node.depth
+      : node.sourceLinks.length ? d3Array.min(node.sourceLinks, targetDepth) - 1
+      : 0;
+}
+
+function constant(x) {
+  return function() {
+    return x;
+  };
+}
 
 function ascendingSourceBreadth(a, b) {
   return ascendingBreadth(a.source, b.source) || a.index - b.index;
@@ -51,7 +82,7 @@ function computeLinkBreadths({nodes}) {
   }
 }
 
-export default function Sankey() {
+function Sankey() {
   let x0 = 0, y0 = 0, x1 = 1, y1 = 1; // extent
   let dx = 24; // nodeWidth
   let dy = 8, py; // nodePadding
@@ -149,7 +180,7 @@ export default function Sankey() {
   function computeNodeValues({nodes}) {
     for (const node of nodes) {
       node.value = node.fixedValue === undefined
-          ? Math.max(sum(node.sourceLinks, value), sum(node.targetLinks, value))
+          ? Math.max(d3Array.sum(node.sourceLinks, value), d3Array.sum(node.targetLinks, value))
           : node.fixedValue;
     }
   }
@@ -170,7 +201,7 @@ export default function Sankey() {
       current = next;
       next = new Set;
     }
-  }
+  };
 
   function computeNodeHeights({nodes}) {
     const n = nodes.length;
@@ -191,7 +222,7 @@ export default function Sankey() {
   }
 
   function computeNodeLayers({nodes}) {
-    const x = max(nodes, d => d.depth) + 1;
+    const x = d3Array.max(nodes, d => d.depth) + 1;
     const kx = (x1 - x0 - dx) / (x - 1);
     const columns = new Array(x);
     for (const node of nodes) {
@@ -209,7 +240,7 @@ export default function Sankey() {
   }
 
   function initializeNodeBreadths(columns) {
-    const ky = min(columns, c => (y1 - y0 - (c.length - 1) * py) / sum(c, value));
+    const ky = d3Array.min(columns, c => (y1 - y0 - (c.length - 1) * py) / d3Array.sum(c, value));
     for (const nodes of columns) {
       let y = y0;
       for (const node of nodes) {
@@ -232,7 +263,7 @@ export default function Sankey() {
 
   function computeNodeBreadths(graph) {
     const columns = computeNodeLayers(graph);
-    py = Math.min(dy, (y1 - y0) / (max(columns, c => c.length) - 1));
+    py = Math.min(dy, (y1 - y0) / (d3Array.max(columns, c => c.length) - 1));
     initializeNodeBreadths(columns);
     for (let i = 0; i < iterations; ++i) {
       const alpha = Math.pow(0.99, i);
@@ -367,3 +398,28 @@ export default function Sankey() {
 
   return sankey;
 }
+
+function horizontalSource(d) {
+  return [d.source.x1, d.y0];
+}
+
+function horizontalTarget(d) {
+  return [d.target.x0, d.y1];
+}
+
+function sankeyLinkHorizontal() {
+  return d3Shape.linkHorizontal()
+      .source(horizontalSource)
+      .target(horizontalTarget);
+}
+
+exports.sankey = Sankey;
+exports.sankeyCenter = center;
+exports.sankeyJustify = justify;
+exports.sankeyLeft = left;
+exports.sankeyLinkHorizontal = sankeyLinkHorizontal;
+exports.sankeyRight = right;
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+})));
