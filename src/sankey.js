@@ -193,7 +193,7 @@ export default function Sankey() {
   function computeNodeLayers({nodes}) {
     const x = max(nodes, d => d.depth) + 1;
     const kx = (x1 - x0 - dx) / (x - 1);
-    const columns = new Array(x);
+    let columns = new Array(x);
     for (const node of nodes) {
       const i = Math.max(0, Math.min(x - 1, Math.floor(align.call(null, node, x))));
       node.layer = i;
@@ -202,6 +202,7 @@ export default function Sankey() {
       if (columns[i]) columns[i].push(node);
       else columns[i] = [node];
     }
+    columns = columns.filter(column => column !== undefined);
     if (sort) for (const column of columns) {
       column.sort(sort);
     }
